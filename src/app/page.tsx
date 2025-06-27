@@ -1,12 +1,19 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Camera, Search, ChevronRight, BookOpen } from "lucide-react"
 import { ContributionGrid } from "@/components/features/analytics/contribution-grid"
 import { Navigation } from "@/components/layout/navigation"
+import { QuickAddBook } from "@/components/features/book-logging/quick-add-book"
+import { RecentBooksCarousel } from "@/components/features/book-logging/recent-books-carousel"
 import { getGreeting } from "@/lib/utils"
+import { useState } from "react"
 
 export default function HomePage() {
   const greeting = getGreeting()
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
+  const [quickAddMode, setQuickAddMode] = useState<'scan' | 'search' | 'select'>('scan')
 
   return (
     <div className="min-h-screen bg-cream-dark">
@@ -33,6 +40,10 @@ export default function HomePage() {
                   <Button
                     className="flex-1 h-14 bg-sage hover:bg-sage-dark text-white text-lg font-medium"
                     size="lg"
+                    onClick={() => {
+                      setQuickAddMode('scan')
+                      setIsQuickAddOpen(true)
+                    }}
                   >
                     <Camera className="mr-3 h-5 w-5" />
                     Scan book
@@ -42,42 +53,26 @@ export default function HomePage() {
                     variant="outline"
                     className="flex-1 h-14 border-gray-300 text-gray-700 hover:bg-gray-50 bg-white text-lg"
                     size="lg"
+                    onClick={() => {
+                      setQuickAddMode('search')
+                      setIsQuickAddOpen(true)
+                    }}
                   >
                     <Search className="mr-3 h-5 w-5" />
                     Search by title
                   </Button>
                 </div>
 
-                <div>
-                  <h3 className="text-lg font-medium text-charcoal mb-4">Read again today:</h3>
-                  <div className="flex space-x-4 items-center">
-                    <div className="flex space-x-3">
-                      <img
-                        src="/placeholder.svg?height=80&width=60&text=Book1"
-                        alt="Good Night Moon"
-                        className="w-15 h-20 rounded-md shadow-sm"
-                      />
-                      <img
-                        src="/placeholder.svg?height=80&width=60&text=Book2"
-                        alt="Hairy Maclary"
-                        className="w-15 h-20 rounded-md shadow-sm"
-                      />
-                      <img
-                        src="/placeholder.svg?height=80&width=60&text=Book3"
-                        alt="Brown Bear"
-                        className="w-15 h-20 rounded-md shadow-sm"
-                      />
-                      <img
-                        src="/placeholder.svg?height=80&width=60&text=Book4"
-                        alt="Very Hungry Caterpillar"
-                        className="w-15 h-20 rounded-md shadow-sm"
-                      />
-                    </div>
-                    <Button variant="ghost" className="text-gray-600 hover:text-charcoal">
-                      More... <ChevronRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                <RecentBooksCarousel 
+                  onBookClick={(book) => {
+                    setQuickAddMode('select')
+                    setIsQuickAddOpen(true)
+                  }}
+                  onAddBookClick={() => {
+                    setQuickAddMode('scan')
+                    setIsQuickAddOpen(true)
+                  }}
+                />
               </CardContent>
             </Card>
 
@@ -108,7 +103,7 @@ export default function HomePage() {
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
                   <div className="flex items-center space-x-3">
                     <img
-                      src="/placeholder.svg?height=50&width=40&text=Panda"
+                      src="/api/placeholder?height=50&width=40&text=Panda"
                       alt="Panda Activity Book"
                       className="w-10 h-12 rounded shadow-sm"
                     />
@@ -120,7 +115,7 @@ export default function HomePage() {
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
                   <div className="flex items-center space-x-3">
                     <img
-                      src="/placeholder.svg?height=50&width=40&text=Caterpillar"
+                      src="/api/placeholder?height=50&width=40&text=Caterpillar"
                       alt="The Very Hungry Caterpillar"
                       className="w-10 h-12 rounded shadow-sm"
                     />
@@ -132,7 +127,7 @@ export default function HomePage() {
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
                   <div className="flex items-center space-x-3">
                     <img
-                      src="/placeholder.svg?height=50&width=40&text=Goodnight"
+                      src="/api/placeholder?height=50&width=40&text=Goodnight"
                       alt="Goodnight Moon"
                       className="w-10 h-12 rounded shadow-sm"
                     />
@@ -144,7 +139,7 @@ export default function HomePage() {
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
                   <div className="flex items-center space-x-3">
                     <img
-                      src="/placeholder.svg?height=50&width=40&text=Bear"
+                      src="/api/placeholder?height=50&width=40&text=Bear"
                       alt="Brown Bear, Brown Bear"
                       className="w-10 h-12 rounded shadow-sm"
                     />
@@ -156,7 +151,7 @@ export default function HomePage() {
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
                   <div className="flex items-center space-x-3">
                     <img
-                      src="/placeholder.svg?height=50&width=40&text=Gruffalo"
+                      src="/api/placeholder?height=50&width=40&text=Gruffalo"
                       alt="The Gruffalo"
                       className="w-10 h-12 rounded shadow-sm"
                     />
@@ -169,6 +164,13 @@ export default function HomePage() {
           </div>
         </div>
       </main>
+
+      {/* Quick Add Book Modal/Drawer */}
+      <QuickAddBook
+        isOpen={isQuickAddOpen}
+        onClose={() => setIsQuickAddOpen(false)}
+        initialMode={quickAddMode}
+      />
     </div>
   )
 } 
