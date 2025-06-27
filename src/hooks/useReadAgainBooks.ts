@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { searchBooks } from '@/lib/api/google-books'
+import { getRecommendedBooks, BookReadingHistory } from '@/lib/recommendation-algorithm'
 
 export interface ReadAgainBook {
   id: string
@@ -12,62 +13,67 @@ export interface ReadAgainBook {
   readCount: number
   searchQuery: string
   googleBooksId?: string
+  recommendationScore?: number
 }
 
-const READ_AGAIN_BOOKS: Omit<ReadAgainBook, 'coverUrl' | 'googleBooksId'>[] = [
-  {
-    id: '1',
-    title: 'The Very Hungry Caterpillar',
-    author: 'Eric Carle',
-    searchQuery: 'The Very Hungry Caterpillar Eric Carle',
-    lastRead: '2 days ago',
-    childName: 'Nile',
-    reaction: '😍',
-    readCount: 12
-  },
-  {
-    id: '2',
-    title: 'Goodnight Moon',
-    author: 'Margaret Wise Brown',
-    searchQuery: 'Goodnight Moon Margaret Wise Brown',
-    lastRead: '3 days ago',
-    childName: 'Emma',
-    reaction: '😴',
-    readCount: 8
-  },
-  {
-    id: '3',
-    title: 'Where the Wild Things Are',
-    author: 'Maurice Sendak',
-    searchQuery: 'Where the Wild Things Are Maurice Sendak',
-    lastRead: '5 days ago',
-    childName: 'Nile',
-    reaction: '🤔',
-    readCount: 6
-  },
-  {
-    id: '4',
-    title: 'Green Eggs and Ham',
-    author: 'Dr. Seuss',
-    searchQuery: 'Green Eggs and Ham Dr. Seuss',
-    lastRead: '1 week ago',
-    childName: 'Emma',
-    reaction: '😂',
-    readCount: 15
+// Helper function to convert date to human-readable format
+function formatLastRead(date: Date): string {
+  const now = new Date()
+  const diffTime = now.getTime() - date.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 0) return 'today'
+  if (diffDays === 1) return '1 day ago'
+  if (diffDays < 7) return `${diffDays} days ago`
+  if (diffDays < 14) return '1 week ago'
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
+  if (diffDays < 60) return '1 month ago'
+  return `${Math.floor(diffDays / 30)} months ago`
+}
+
+// Helper function to convert engagement rating to emoji
+function getReactionEmoji(engagementRating: number): string {
+  switch (engagementRating) {
+    case 5: return '😍'
+    case 4: return '😊'
+    case 3: return '🙂'
+    case 2: return '😐'
+    case 1: return '😕'
+    default: return '🙂'
   }
-]
+}
+
+// Transform algorithm results to ReadAgainBook format
+function transformToReadAgainBooks(recommendedBooks: BookReadingHistory[]): Omit<ReadAgainBook, 'coverUrl' | 'googleBooksId'>[] {
+  return recommendedBooks.map(book => ({
+    id: book.bookId,
+    title: book.title,
+    author: book.author,
+    searchQuery: book.searchQuery,
+    lastRead: formatLastRead(book.lastReadDate),
+    childName: 'Nile', // In real app, this would come from child profile
+    reaction: getReactionEmoji(book.engagementRating),
+    readCount: book.readCount
+  }))
+}
 
 export function useReadAgainBooks() {
-  const [books, setBooks] = useState<ReadAgainBook[]>(READ_AGAIN_BOOKS as ReadAgainBook[])
+  const [books, setBooks] = useState<ReadAgainBook[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    async function fetchBookImages() {
+    async function fetchSmartRecommendations() {
       try {
         setLoading(true)
+        
+        // Get smart recommendations from algorithm
+        const recommendedBooks = getRecommendedBooks(4) // Get top 4 recommendations
+        const transformedBooks = transformToReadAgainBooks(recommendedBooks)
+        
+        // Fetch real book images from Google Books API
         const booksWithImages = await Promise.all(
-          READ_AGAIN_BOOKS.map(async (book) => {
+          transformedBooks.map(async (book) => {
             try {
               const searchResults = await searchBooks(book.searchQuery, 1)
               const result = searchResults[0]
@@ -96,14 +102,14 @@ export function useReadAgainBooks() {
         
         setBooks(booksWithImages)
       } catch (err) {
-        setError('Failed to fetch book images')
-        console.error('Error fetching read again books:', err)
+        setError('Failed to fetch smart recommendations')
+        console.error('Error fetching smart read again books:', err)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchBookImages()
+    fetchSmartRecommendations()
   }, [])
 
   return { books, loading, error }
