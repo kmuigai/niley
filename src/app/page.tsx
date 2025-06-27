@@ -8,12 +8,14 @@ import { Navigation } from "@/components/layout/navigation"
 import { QuickAddBook } from "@/components/features/book-logging/quick-add-book"
 import { RecentBooksCarousel } from "@/components/features/book-logging/recent-books-carousel"
 import { getGreeting } from "@/lib/utils"
+import { useRecentBooks } from "@/hooks/useRecentBooks"
 import { useState } from "react"
 
 export default function HomePage() {
   const greeting = getGreeting()
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
   const [quickAddMode, setQuickAddMode] = useState<'scan' | 'search' | 'select'>('scan')
+  const { books: recentBooks, loading: booksLoading } = useRecentBooks()
 
   return (
     <div className="min-h-screen bg-cream-dark">
@@ -100,65 +102,43 @@ export default function HomePage() {
             <div>
               <h3 className="text-xl font-semibold text-charcoal mb-4">Recent reads</h3>
               <div className="space-y-3">
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src="/api/placeholder?height=50&width=40&text=Panda"
-                      alt="Panda Activity Book"
-                      className="w-10 h-12 rounded shadow-sm"
-                    />
-                    <span className="text-charcoal font-medium">Panda Activity Book</span>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                </div>
-
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src="/api/placeholder?height=50&width=40&text=Caterpillar"
-                      alt="The Very Hungry Caterpillar"
-                      className="w-10 h-12 rounded shadow-sm"
-                    />
-                    <span className="text-charcoal font-medium">The Very Hungry Caterpillar</span>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                </div>
-
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src="/api/placeholder?height=50&width=40&text=Goodnight"
-                      alt="Goodnight Moon"
-                      className="w-10 h-12 rounded shadow-sm"
-                    />
-                    <span className="text-charcoal font-medium">Goodnight Moon</span>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                </div>
-
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src="/api/placeholder?height=50&width=40&text=Bear"
-                      alt="Brown Bear, Brown Bear"
-                      className="w-10 h-12 rounded shadow-sm"
-                    />
-                    <span className="text-charcoal font-medium">Brown Bear, Brown Bear</span>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                </div>
-
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src="/api/placeholder?height=50&width=40&text=Gruffalo"
-                      alt="The Gruffalo"
-                      className="w-10 h-12 rounded shadow-sm"
-                    />
-                    <span className="text-charcoal font-medium">The Gruffalo</span>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                </div>
+                {booksLoading ? (
+                  // Loading state
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <div key={index} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-12 bg-gray-200 rounded shadow-sm animate-pulse" />
+                        <div className="h-4 bg-gray-200 rounded w-32 animate-pulse" />
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-gray-400" />
+                    </div>
+                  ))
+                ) : (
+                  // Actual books
+                  recentBooks.map((book, index) => (
+                    <div key={index} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={book.imageUrl || `/api/placeholder?height=50&width=40&text=${encodeURIComponent(book.title.split(' ')[0])}`}
+                          alt={book.title}
+                          className="w-10 h-12 rounded shadow-sm object-cover"
+                          onError={(e) => {
+                            // Fallback to placeholder if image fails to load
+                            const target = e.target as HTMLImageElement
+                            target.src = `/api/placeholder?height=50&width=40&text=${encodeURIComponent(book.title.split(' ')[0])}`
+                          }}
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-charcoal font-medium">{book.title}</span>
+                          {book.authors && book.authors.length > 0 && (
+                            <span className="text-gray-500 text-sm">{book.authors[0]}</span>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-gray-400" />
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

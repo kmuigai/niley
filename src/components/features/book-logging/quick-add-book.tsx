@@ -38,8 +38,22 @@ export function QuickAddBook({ isOpen, onClose, initialMode }: QuickAddBookProps
   )
   const [selectedBook, setSelectedBook] = useState<BookSearchResult | null>(null)
 
+  // Reset to initial mode when modal opens with a specific mode
+  React.useEffect(() => {
+    if (isOpen) {
+      const newStep = initialMode === 'scan' ? 'scan' :
+                     initialMode === 'search' ? 'search' :
+                     'method'
+      setCurrentStep(newStep)
+    }
+  }, [isOpen, initialMode])
+
   const handleClose = () => {
-    setCurrentStep('method')
+    // Reset to the initial mode instead of always going to 'method'
+    const resetStep = initialMode === 'scan' ? 'scan' :
+                     initialMode === 'search' ? 'search' :
+                     'method'
+    setCurrentStep(resetStep)
     setSelectedBook(null)
     onClose()
   }
@@ -61,7 +75,12 @@ export function QuickAddBook({ isOpen, onClose, initialMode }: QuickAddBookProps
 
   const handleBack = () => {
     if (currentStep === 'scan' || currentStep === 'search') {
-      setCurrentStep('method')
+      // If we have an initial mode, close the modal instead of going to method selection
+      if (initialMode === 'scan' || initialMode === 'search') {
+        handleClose()
+      } else {
+        setCurrentStep('method')
+      }
     } else if (currentStep === 'book-select') {
       setCurrentStep('search')
     } else if (currentStep === 'session-form') {
@@ -130,13 +149,16 @@ export function QuickAddBook({ isOpen, onClose, initialMode }: QuickAddBookProps
             className="space-y-6"
           >
             <div className="flex items-center justify-between">
-              <Button variant="ghost" onClick={handleBack} size="sm">
-                ← Back
-              </Button>
+              {/* Only show back button if not coming directly from scan mode */}
+              {initialMode !== 'scan' ? (
+                <Button variant="ghost" onClick={handleBack} size="sm">
+                  ← Back
+                </Button>
+              ) : (
+                <div></div>
+              )}
               <h2 className="text-lg font-semibold text-charcoal">Scan Book</h2>
-              <Button variant="ghost" onClick={handleClose} size="sm">
-                <X className="h-4 w-4" />
-              </Button>
+              <div></div>
             </div>
 
             <div className="text-center space-y-4">
@@ -170,8 +192,8 @@ export function QuickAddBook({ isOpen, onClose, initialMode }: QuickAddBookProps
           >
             <BookSearch
               onBookSelect={handleBookSelect}
-              onBack={handleBack}
-              onClose={handleClose}
+              onBack={initialMode !== 'search' ? handleBack : undefined}
+              onClose={undefined}
             />
           </motion.div>
         )}
@@ -190,9 +212,7 @@ export function QuickAddBook({ isOpen, onClose, initialMode }: QuickAddBookProps
                 ← Back
               </Button>
               <h2 className="text-lg font-semibold text-charcoal">Confirm Book</h2>
-              <Button variant="ghost" onClick={handleClose} size="sm">
-                <X className="h-4 w-4" />
-              </Button>
+              <div></div>
             </div>
 
             <div className="space-y-6">
@@ -269,7 +289,7 @@ export function QuickAddBook({ isOpen, onClose, initialMode }: QuickAddBookProps
             <ReadingSessionForm
               onSubmit={handleSessionSubmit}
               onBack={handleBack}
-              onClose={handleClose}
+              onClose={undefined}
             />
           </motion.div>
         )}
